@@ -1,0 +1,58 @@
+{% extends 'magazin/base.html' %}
+{% block title %}Créer un compte — Magazin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-5 col-lg-4">
+    <div class="card p-4">
+
+      <div class="text-center mb-4">
+        <p class="eyebrow" style="color:var(--brand-primary);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;">Nouveau</p>
+        <h2 style="font-family:var(--font-serif)">Créer un compte</h2>
+      </div>
+
+      {% if form.errors %}
+        <div class="alert alert-danger py-2" style="font-size:0.85rem">
+          {% for field in form %}
+            {% for error in field.errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Nom d'utilisateur</label>
+          <input type="text" name="username" class="form-control"
+                 placeholder="votre_nom" required autofocus>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Mot de passe</label>
+          <input type="password" name="password1" class="form-control"
+                 placeholder="••••••••" required>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Confirmer le mot de passe</label>
+          <input type="password" name="password2" class="form-control"
+                 placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-brand w-100 mb-3">
+          <i class="bi bi-person-plus me-2"></i>Créer mon compte
+        </button>
+
+        <p class="text-center text-secondary mb-0" style="font-size:0.85rem">
+          Déjà un compte ?
+          <a href="{% url 'login' %}" style="color:var(--brand-primary)">Se connecter</a>
+        </p>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

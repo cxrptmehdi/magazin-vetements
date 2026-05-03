@@ -1,0 +1,128 @@
+{% extends 'magazin/base.html' %}
+
+{% block title %}Produits — Magazin{% endblock %}
+
+{% block nav_produits %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Collection</p>
+  <h1>Nos <span class="text-gradient">Produits</span></h1>
+  <p>Découvrez notre sélection exclusive</p>
+</div>
+<form method="get" class="d-flex justify-content-center mb-4 gap-2">
+  {% if categorie_active %}
+    <input type="hidden" name="categorie" value="{{ categorie_active }}">
+  {% endif %}
+  <input type="text" name="q" class="form-control w-auto"
+         placeholder="Rechercher un produit..." value="{{ request.GET.q }}">
+  <button type="submit" class="btn btn-brand btn-sm">
+    <i class="bi bi-search"></i>
+  </button>
+</form>
+<!-- Category filter -->
+<div class="d-flex flex-wrap gap-2 justify-content-center mb-5">
+  <a href="{% url 'produits' %}"
+     class="btn {% if not categorie_active %}btn-brand{% else %}btn-outline-brand{% endif %} btn-sm">
+    Tous
+  </a>
+  {% for cat in categories %}
+  <a href="{% url 'produits' %}?categorie={{ cat.id }}"
+     class="btn {% if categorie_active == cat.id %}btn-brand{% else %}btn-outline-brand{% endif %} btn-sm">
+    {{ cat.nom_categorie }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Products grid -->
+<div class="row g-4">
+  {% for produit in produits %}
+  <div class="col-sm-6 col-lg-4 col-xl-3">
+    <div class="card h-100">
+
+      <!-- Image -->
+      {% if produit.image %}
+        <img src="{{ produit.image.url }}" class="card-img-top"
+             style="aspect-ratio:3/4;object-fit:cover;" alt="{{ produit.nom }}">
+      {% else %}
+        <div style="aspect-ratio:3/4;background:var(--bs-secondary-bg);
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="bi bi-image" style="font-size:2.5rem;opacity:0.15;"></i>
+        </div>
+      {% endif %}
+
+      <div class="card-body d-flex flex-column gap-2">
+
+        <!-- Category badge -->
+        <span class="badge-brand align-self-start">{{ produit.categorie.nom_categorie }}</span>
+
+        <!-- Name -->
+        <h5 class="card-title mb-0" style="font-family:var(--font-serif)">
+          {{ produit.nom }}
+        </h5>
+
+        <!-- Description -->
+        {% if produit.description %}
+          <p class="text-secondary mb-0" style="font-size:0.8rem;line-height:1.5">
+            {{ produit.description|truncatechars:60 }}
+          </p>
+        {% endif %}
+
+        <!-- Size -->
+        <p class="text-secondary mb-0" style="font-size:0.8rem">
+          <i class="bi bi-rulers me-1"></i>Taille : {{ produit.get_taille_display }}
+        </p>
+
+        <!-- Stock status -->
+        {% if produit.stock %}
+          {% if produit.stock.quantite > 5 %}
+            <span style="font-size:0.75rem;color:var(--brand-accent)">
+              <i class="bi bi-check-circle me-1"></i>En stock
+            </span>
+          {% elif produit.stock.quantite > 0 %}
+            <span style="font-size:0.75rem;color:var(--brand-warm)">
+              <i class="bi bi-exclamation-circle me-1"></i>Plus que {{ produit.stock.quantite }} restant(s)
+            </span>
+          {% else %}
+            <span style="font-size:0.75rem;color:var(--brand-secondary)">
+              <i class="bi bi-x-circle me-1"></i>Rupture de stock
+            </span>
+          {% endif %}
+        {% endif %}
+
+        <!-- Price + Add to cart -->
+        <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+          <strong class="text-gradient" style="font-size:1.1rem">{{ produit.prix }} DH</strong>
+
+          {% if user.is_authenticated %}
+            {% if produit.stock and produit.stock.quantite > 0 %}
+              <a href="{% url 'ajouter_panier' produit.id %}" class="btn btn-brand btn-sm">
+                <i class="bi bi-bag-plus me-1"></i>Ajouter
+              </a>
+            {% else %}
+              <button class="btn btn-sm" disabled
+                      style="border:1.5px solid #ccc;color:#ccc;border-radius:50px;padding:4px 14px;font-size:0.875rem;">
+                Indisponible
+              </button>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-brand btn-sm">
+              <i class="bi bi-person me-1"></i>Connexion
+            </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {% empty %}
+  <div class="col-12 text-center py-5">
+    <i class="bi bi-search" style="font-size:3rem;opacity:0.2;"></i>
+    <p class="mt-3 text-secondary">Aucun produit dans cette catégorie.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'magazin/base.html' %}
+{% block title %}Gestion du stock — Magazin{% endblock %}
+
+{% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Vendeur</p>
+  <h1>Gestion du <span class="text-gradient">Stock</span></h1>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;">
+        <tr>
+          <th class="ps-4">Produit</th>
+          <th>Catégorie</th>
+          <th>Taille</th>
+          <th>Stock</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for produit in produits %}
+        <tr>
+          <td class="ps-4">
+            <div class="d-flex align-items-center gap-3">
+              {% if produit.image %}
+                <img src="{{ produit.image.url }}"
+                     style="width:40px;height:40px;object-fit:cover;border-radius:8px;">
+              {% else %}
+                <div style="width:40px;height:40px;background:var(--bs-secondary-bg);
+                            border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-image" style="opacity:0.2;font-size:0.8rem;"></i>
+                </div>
+              {% endif %}
+              <span style="font-weight:500;font-size:0.9rem">{{ produit.nom }}</span>
+            </div>
+          </td>
+          <td><span class="badge-brand">{{ produit.categorie.nom_categorie }}</span></td>
+          <td><small class="text-secondary">{{ produit.get_taille_display }}</small></td>
+          <td>
+            {% if produit.stock %}
+              {% if produit.stock.quantite > 5 %}
+                <span style="color:var(--brand-accent);font-weight:500">
+                  {{ produit.stock.quantite }}
+                </span>
+              {% elif produit.stock.quantite > 0 %}
+                <span style="color:var(--brand-warm);font-weight:500">
+                  {{ produit.stock.quantite }}
+                </span>
+              {% else %}
+                <span style="color:var(--brand-secondary);font-weight:500">0</span>
+              {% endif %}
+            {% else %}
+              <span class="text-secondary">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <a href="{% url 'modifier_stock' produit.id %}"
+               class="btn btn-outline-brand btn-sm me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'modifier_produit' produit.id %}"
+               class="btn btn-brand btn-sm me-1">
+              <i class="bi bi-box"></i>
+            </a>
+            <a href="{% url 'supprimer_produit' produit.id %}"
+               class="btn btn-sm"
+               style="border:1.5px solid var(--brand-secondary);color:var(--brand-secondary);border-radius:50px;padding:4px 12px;">
+              <i class="bi bi-trash"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

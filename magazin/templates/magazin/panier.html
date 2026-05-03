@@ -1,0 +1,154 @@
+{% extends 'magazin/base.html' %} {% block title %}Mon Panier — Magazin
+{%endblock %} {% block nav_panier %}active{% endblock %} {% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Commande</p>
+  <h1>Mon <span class="text-gradient">Panier</span></h1>
+</div>
+
+{% if panier.items.all %}
+
+<div class="row g-4">
+  <!-- Items -->
+  <div class="col-lg-8">
+    {% for item in panier.items.all %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row align-items-center g-3">
+          <!-- Image -->
+          <div class="col-3 col-md-2">
+            {% if item.produit.image %}
+            <img
+              src="{{ item.produit.image.url }}"
+              class="img-fluid rounded"
+              style="aspect-ratio: 1; object-fit: cover"
+              alt="{{ item.produit.nom }}"
+            />
+            {% else %}
+            <div
+              style="
+                aspect-ratio: 1;
+                background: var(--bs-secondary-bg);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="bi bi-image" style="opacity: 0.2"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Info -->
+          <div class="col-9 col-md-4">
+            <span class="badge-brand" style="font-size: 0.65rem"
+              >{{ item.produit.categorie.nom_categorie }}</span
+            >
+            <h6 class="mt-1 mb-0" style="font-family: var(--font-serif)">
+              {{ item.produit.nom }}
+            </h6>
+            <small class="text-secondary"
+              >Taille : {{ item.produit.get_taille_display }}</small
+            >
+          </div>
+
+          <!-- Quantity -->
+          <div class="col-md-3">
+            <form
+              method="post"
+              action="{% url 'modifier_quantite' item.id %}"
+              class="d-flex align-items-center gap-2"
+            >
+              {% csrf_token %}
+              <input
+                type="number"
+                name="quantite"
+                value="{{ item.quantite }}"
+                min="1"
+                max="99"
+                class="form-control form-control-sm text-center"
+                style="width: 65px"
+              />
+              <button type="submit" class="btn btn-outline-brand btn-sm">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Subtotal + remove -->
+          <div
+            class="col-md-3 d-flex justify-content-between align-items-center"
+          >
+            <strong class="text-gradient">{{ item.sous_total }} DH</strong>
+            <a
+              href="{% url 'retirer_panier' item.id %}"
+              class="btn btn-sm"
+              style="
+                color: var(--brand-secondary);
+                border: 1.5px solid var(--brand-secondary);
+                border-radius: 50px;
+                padding: 4px 12px;
+              "
+            >
+              <i class="bi bi-trash"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Summary -->
+  <div class="col-lg-4">
+    <div class="card p-4">
+      <h5 class="mb-4" style="font-family: var(--font-serif)">Récapitulatif</h5>
+      <div
+        class="d-flex justify-content-between mb-2 text-secondary"
+        style="font-size: 0.9rem"
+      >
+        <span>Sous-total</span>
+        <span>{{ panier.total }} DH</span>
+      </div>
+      <div
+        class="d-flex justify-content-between mb-2 text-secondary"
+        style="font-size: 0.9rem"
+      >
+        <span>Livraison</span>
+        <span class="text-success">Gratuite</span>
+      </div>
+      <hr />
+      <div class="d-flex justify-content-between mb-4">
+        <strong>Total</strong>
+        <strong class="text-gradient" style="font-size: 1.2rem"
+          >{{ panier.total }} DH</strong
+        >
+      </div>
+      <a href="{% url 'checkout' %}" class="btn btn-brand w-100">
+        <i class="bi bi-credit-card me-2"></i>Passer la commande
+      </a>
+      <a href="{% url 'produits' %}" class="btn btn-outline-brand w-100 mt-2">
+        <i class="bi bi-arrow-left me-2"></i>Continuer mes achats
+      </a>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <i
+    class="bi bi-bag-x"
+    style="font-size: 4rem; color: var(--brand-primary); opacity: 0.3"
+  ></i>
+  <h4 class="mt-4" style="font-family: var(--font-serif)">
+    Votre panier est vide
+  </h4>
+  <p class="text-secondary mb-4">
+    Découvrez nos produits et ajoutez vos favoris.
+  </p>
+  <a href="{% url 'produits' %}" class="btn btn-brand">
+    <i class="bi bi-grid me-2"></i>Voir les produits
+  </a>
+</div>
+{% endif %} {% endblock %}

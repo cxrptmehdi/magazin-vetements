@@ -1,0 +1,71 @@
+{% extends 'magazin/base.html' %}
+{% block title %}{{ titre }} — Magazin{% endblock %}
+
+{% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Gestion</p>
+  <h1><span class="text-gradient">{{ titre }}</span></h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card p-4">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Nom</label>
+          {{ form.nom }}
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:500">Prix (DH)</label>
+            {{ form.prix }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:500">Taille</label>
+            {{ form.taille }}
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:500">Catégorie</label>
+            {{ form.categorie }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:500">Fournisseur</label>
+            {{ form.fournisseur }}
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Date d'achat</label>
+          {{ form.date_achat }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Description</label>
+          {{ form.description }}
+        </div>
+        <div class="mb-4">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Image</label>
+          {{ form.image }}
+          {% if produit.image %}
+            <div class="mt-2">
+              <img src="{{ produit.image.url }}"
+                   style="height:80px;border-radius:8px;object-fit:cover;">
+            </div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-brand w-100">
+          <i class="bi bi-check-circle me-2"></i>Enregistrer
+        </button>
+        <a href="{% url 'produits' %}" class="btn btn-outline-brand w-100 mt-2">
+          <i class="bi bi-arrow-left me-2"></i>Annuler
+        </a>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
