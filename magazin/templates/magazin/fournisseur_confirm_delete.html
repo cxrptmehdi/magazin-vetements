@@ -1,0 +1,25 @@
+{% extends 'magazin/base.html' %}
+{% block title %}Supprimer fournisseur — Magazin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card p-4">
+      <p class="eyebrow mb-2">Confirmation</p>
+      <h1 class="h4 mb-3">Supprimer ce fournisseur ?</h1>
+      <p class="mb-4">
+        Vous allez supprimer <strong>{{ fournisseur.nom_societe }}</strong>.
+        Cette action est irréversible.
+      </p>
+
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash me-2"></i>Supprimer
+        </button>
+        <a href="{% url 'fournisseurs' %}" class="btn btn-outline-brand">Annuler</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

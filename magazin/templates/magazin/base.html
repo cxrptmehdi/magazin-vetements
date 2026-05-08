@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Magazin{% endblock %}</title>
+    <title>{% block title %}StyleStock{% endblock %}</title>
 
     <!-- Bootstrap 5 -->
     <link
@@ -31,7 +31,7 @@
     <!-- ── Navbar ── -->
     <nav class="navbar navbar-expand-lg sticky-top">
       <div class="container">
-        <a class="navbar-brand" href="/">✦ Magazin</a>
+        <a class="navbar-brand" href="/">✦ StyleStock</a>
 
         <button
           class="navbar-toggler border-0"
@@ -78,6 +78,16 @@
                 <li>
                   <a class="dropdown-item" href="{% url 'stock' %}">
                     <i class="bi bi-boxes me-2"></i>Gérer le stock
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'fournisseurs' %}">
+                    <i class="bi bi-truck me-2"></i>Fournisseurs
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'gestion_commandes' %}">
+                    <i class="bi bi-receipt-cutoff me-2"></i>Commandes clients
                   </a>
                 </li>
               </ul>

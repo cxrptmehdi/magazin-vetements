@@ -1,0 +1,41 @@
+{% extends 'magazin/base.html' %}
+{% block title %}{{ titre }} — Magazin{% endblock %}
+
+{% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Gestion</p>
+  <h1><span class="text-gradient">{{ titre }}</span></h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card p-4">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Nom de la société</label>
+          {{ form.nom_societe }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Contact</label>
+          {{ form.contact }}
+        </div>
+        <div class="mb-4">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Adresse</label>
+          {{ form.adresse }}
+        </div>
+
+        <button type="submit" class="btn btn-brand w-100">
+          <i class="bi bi-check-circle me-2"></i>Enregistrer
+        </button>
+        <a href="{% url 'fournisseurs' %}" class="btn btn-outline-brand w-100 mt-2">
+          <i class="bi bi-arrow-left me-2"></i>Annuler
+        </a>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

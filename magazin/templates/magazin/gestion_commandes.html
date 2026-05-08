@@ -1,0 +1,64 @@
+{% extends 'magazin/base.html' %}
+{% block title %}Commandes clients — Magazin{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <p class="eyebrow">Administration</p>
+  <h1><span class="text-gradient">Commandes clients</span></h1>
+</div>
+
+{% if commandes %}
+  {% for commande in commandes %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+          <h6 class="mb-0" style="font-family:var(--font-serif)">Commande #{{ commande.id }}</h6>
+          <small class="text-secondary">
+            {{ commande.created_at|date:"d/m/Y à H:i" }} · Client: {{ commande.client.username }}
+          </small>
+        </div>
+        <strong class="text-gradient">{{ commande.total }} DH</strong>
+      </div>
+
+      <div class="border-top pt-3">
+        {% for item in commande.items.all %}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <p class="mb-0" style="font-size:0.9rem;font-weight:500">
+              {% if item.produit %}{{ item.produit.nom }}{% else %}Produit supprimé{% endif %}
+            </p>
+            <small class="text-secondary">{{ item.quantite }} × {{ item.prix_unite }} DH</small>
+          </div>
+          <strong style="font-size:0.9rem">{{ item.sous_total }} DH</strong>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="border-top pt-3 mt-2">
+        <small class="text-secondary d-block mb-3">
+          <i class="bi bi-geo-alt me-1"></i>{{ commande.adresse }}
+        </small>
+        <form method="post" action="{% url 'modifier_statut_commande' commande.id %}" class="d-flex gap-2">
+          {% csrf_token %}
+          <select name="statut" class="form-select">
+            {% for code, label in status_choices %}
+              <option value="{{ code }}" {% if commande.statut == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-brand">
+            <i class="bi bi-check2-circle me-2"></i>Mettre à jour
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-receipt" style="font-size:4rem;color:var(--brand-primary);opacity:0.3;"></i>
+    <h4 class="mt-4" style="font-family:var(--font-serif)">Aucune commande trouvée</h4>
+    <p class="text-secondary mb-0">Les commandes des clients apparaîtront ici.</p>
+  </div>
+{% endif %}
+{% endblock %}

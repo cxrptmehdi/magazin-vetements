@@ -11,29 +11,45 @@
   <h1>Nos <span class="text-gradient">Produits</span></h1>
   <p>Découvrez notre sélection exclusive</p>
 </div>
-<form method="get" class="d-flex justify-content-center mb-4 gap-2">
-  {% if categorie_active %}
-    <input type="hidden" name="categorie" value="{{ categorie_active }}">
-  {% endif %}
-  <input type="text" name="q" class="form-control w-auto"
-         placeholder="Rechercher un produit..." value="{{ request.GET.q }}">
-  <button type="submit" class="btn btn-brand btn-sm">
+<form method="get" class="row g-2 justify-content-center mb-4">
+  <div class="col-12 col-md-4">
+    <input type="text" name="q" class="form-control"
+           placeholder="Rechercher un produit..." value="{{ request.GET.q }}">
+  </div>
+  <div class="col-6 col-md-2">
+    <select name="categorie" class="form-select">
+      <option value="">Toutes catégories</option>
+      {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if categorie_active == cat.id %}selected{% endif %}>
+          {{ cat.nom_categorie }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-6 col-md-2">
+    <select name="taille" class="form-select">
+      <option value="">Toutes tailles</option>
+      {% for code, label in tailles %}
+        <option value="{{ code }}" {% if taille_active == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-12 col-md-3">
+    <select name="fournisseur" class="form-select">
+      <option value="">Tous fournisseurs</option>
+      {% for fournisseur in fournisseurs %}
+        <option value="{{ fournisseur.id }}" {% if fournisseur_actif == fournisseur.id %}selected{% endif %}>
+          {{ fournisseur.nom_societe }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-12 col-md-1 d-grid">
+    <button type="submit" class="btn btn-brand btn-sm">
     <i class="bi bi-search"></i>
   </button>
+  </div>
 </form>
-<!-- Category filter -->
-<div class="d-flex flex-wrap gap-2 justify-content-center mb-5">
-  <a href="{% url 'produits' %}"
-     class="btn {% if not categorie_active %}btn-brand{% else %}btn-outline-brand{% endif %} btn-sm">
-    Tous
-  </a>
-  {% for cat in categories %}
-  <a href="{% url 'produits' %}?categorie={{ cat.id }}"
-     class="btn {% if categorie_active == cat.id %}btn-brand{% else %}btn-outline-brand{% endif %} btn-sm">
-    {{ cat.nom_categorie }}
-  </a>
-  {% endfor %}
-</div>
 
 <!-- Products grid -->
 <div class="row g-4">

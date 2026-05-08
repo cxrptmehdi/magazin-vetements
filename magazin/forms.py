@@ -1,5 +1,5 @@
 from django import forms
-from .models import Produit, Stock
+from .models import Produit, Stock, Fournisseur
 
 
 class ProduitForm(forms.ModelForm):
@@ -25,4 +25,14 @@ class StockForm(forms.ModelForm):
         fields = ['quantite']
         widgets = {
             'quantite': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+        }
+
+class FournisseurForm(forms.ModelForm):
+    class Meta:
+        model = Fournisseur
+        fields = ['nom_societe', 'contact', 'adresse']
+        widgets = {
+            'nom_societe': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du fournisseur'}),
+            'contact':     forms.TextInput(attrs={'class': 'form-control'}),
+            'adresse':     forms.TextInput(attrs={'class': 'form-control'}),
         }
