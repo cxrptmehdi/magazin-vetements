@@ -8,15 +8,23 @@ from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from .models import Produit, Categorie, Panier, PanierItem, Profile, Stock, Commande, CommandeItem, Fournisseur
 from .decorators import role_required
 
+
+# ── Public views ──────────────────────────────────────────────────────────────
+
 def liste_produits(request):
+    """Display all products with optional filtering by category, supplier, size, or search query."""
     produits = Produit.objects.select_related('categorie', 'fournisseur').all()
     categories = Categorie.objects.all()
     fournisseurs = Fournisseur.objects.all()
     tailles = Produit.TAILLES
+
+    # Read filter params from the query string
     categorie_id = request.GET.get('categorie')
     search = request.GET.get('q')
     fournisseur_id = request.GET.get('fournisseur')
     taille = request.GET.get('taille')
+
+    # Apply each active filter
     if fournisseur_id:
         produits = produits.filter(fournisseur__id=fournisseur_id)
     if taille:
@@ -25,37 +33,40 @@ def liste_produits(request):
         produits = produits.filter(nom__icontains=search)
     if categorie_id:
         produits = produits.filter(categorie__id=categorie_id)
-        
+
     return render(request, 'magazin/liste_produits.html', {
         'produits': produits,
         'categories': categories,
         'fournisseurs': fournisseurs,
         'tailles': tailles,
+        # Pass back active filter values so the template can highlight them
         'fournisseur_actif': int(fournisseur_id) if fournisseur_id else None,
         'taille_active': taille or '',
         'categorie_active': int(categorie_id) if categorie_id else None,
     })
-    
 
 
 def liste_categories(request):
+    """Simple view that lists all product categories."""
     categories = Categorie.objects.all()
-    return render(request, 'magazin/categories.html', {
-        'categories': categories,
-    })
+    return render(request, 'magazin/categories.html', {'categories': categories})
 
+
+# ── Cart ──────────────────────────────────────────────────────────────────────
 
 @login_required
 def voir_panier(request):
+    """Show the current user's cart, creating it if it doesn't exist yet."""
     panier, _ = Panier.objects.get_or_create(client=request.user)
     return render(request, 'magazin/panier.html', {'panier': panier})
 
 
 @login_required
 def ajouter_au_panier(request, produit_id):
+    """Add one unit of a product to the cart, respecting stock limits."""
     produit = get_object_or_404(Produit, id=produit_id)
 
-    # Check stock exists and has quantity
+    # Abort early if the product has no stock record at all
     try:
         stock = produit.stock
     except Stock.DoesNotExist:
@@ -66,6 +77,7 @@ def ajouter_au_panier(request, produit_id):
     item = PanierItem.objects.filter(panier=panier, produit=produit).first()
     quantite_dans_panier = item.quantite if item else 0
 
+    # Don't allow adding more than what's physically in stock
     if stock.quantite <= 0 or quantite_dans_panier >= stock.quantite:
         messages.warning(request, f'Stock insuffisant pour "{produit.nom}" (max {stock.quantite}).')
         return redirect(request.META.get('HTTP_REFERER', '/'))
@@ -82,6 +94,7 @@ def ajouter_au_panier(request, produit_id):
 
 @login_required
 def retirer_du_panier(request, item_id):
+    """Remove a cart item entirely."""
     item = get_object_or_404(PanierItem, id=item_id, panier__client=request.user)
     item.delete()
     messages.success(request, 'Article retiré du panier.')
@@ -90,6 +103,7 @@ def retirer_du_panier(request, item_id):
 
 @login_required
 def modifier_quantite(request, item_id):
+    """Update the quantity of a cart item; deletes it if quantity drops below 1."""
     item = get_object_or_404(PanierItem, id=item_id, panier__client=request.user)
     try:
         quantite = int(request.POST.get('quantite', 1))
@@ -102,6 +116,7 @@ def modifier_quantite(request, item_id):
     else:
         try:
             stock = item.produit.stock
+            # Cap quantity at available stock instead of raising an error
             if quantite > stock.quantite:
                 messages.warning(request, f'Stock insuffisant (max {stock.quantite}).')
                 quantite = stock.quantite
@@ -116,7 +131,10 @@ def modifier_quantite(request, item_id):
     return redirect('panier')
 
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
 def login_view(request):
+    """Handle login. Redirects authenticated users away immediately."""
     if request.user.is_authenticated:
         return redirect('produits')
     form = AuthenticationForm(data=request.POST or None)
@@ -124,6 +142,7 @@ def login_view(request):
         user = form.get_user()
         login(request, user)
         messages.success(request, f'Bienvenue, {user.username} !')
+        # Honor the ?next= param so users land back where they came from
         return redirect(request.GET.get('next', 'produits'))
     return render(request, 'magazin/login.html', {'form': form})
 
@@ -135,6 +154,7 @@ def logout_view(request):
 
 
 def register_view(request):
+    """Register a new user and assign the default CLIENT role."""
     if request.user.is_authenticated:
         return redirect('produits')
     form = UserCreationForm(request.POST or None)
@@ -146,8 +166,16 @@ def register_view(request):
         return redirect('produits')
     return render(request, 'magazin/register.html', {'form': form})
 
+
+# ── Orders ────────────────────────────────────────────────────────────────────
+
 @login_required
 def passer_commande(request):
+    """
+    Convert the current cart into a confirmed order.
+    Uses a database transaction + select_for_update to prevent overselling
+    when multiple users checkout at the same time.
+    """
     panier, _ = Panier.objects.get_or_create(client=request.user)
 
     if not panier.items.exists():
@@ -159,12 +187,12 @@ def passer_commande(request):
         if not adresse:
             messages.error(request, 'Veuillez entrer une adresse de livraison.')
             return render(request, 'magazin/checkout.html', {'panier': panier})
-        with transaction.atomic():
-            items = list(
-                panier.items.select_related('produit').select_for_update()
-            )
 
-            # Recheck stock at checkout to avoid selling unavailable items.
+        with transaction.atomic():
+            # Lock rows so concurrent checkouts can't read stale stock values
+            items = list(panier.items.select_related('produit').select_for_update())
+
+            # Re-validate stock at the last moment before writing anything
             for item in items:
                 try:
                     stock = Stock.objects.select_for_update().get(produit=item.produit)
@@ -189,13 +217,14 @@ def passer_commande(request):
                     commande=commande,
                     produit=item.produit,
                     quantite=item.quantite,
-                    prix_unite=item.produit.prix,
+                    prix_unite=item.produit.prix,  # snapshot price at purchase time
                 )
+                # Deduct from stock
                 stock = Stock.objects.select_for_update().get(produit=item.produit)
                 stock.quantite -= item.quantite
                 stock.save()
 
-            panier.items.all().delete()
+            panier.items.all().delete()  # Clear the cart after a successful order
 
         messages.success(request, f'Commande #{commande.id} passée avec succès !')
         return redirect('mes_commandes')
@@ -205,14 +234,23 @@ def passer_commande(request):
 
 @login_required
 def mes_commandes(request):
+    """Show the logged-in user's own order history, newest first."""
     commandes = Commande.objects.filter(client=request.user).order_by('-created_at')
     return render(request, 'magazin/commandes.html', {'commandes': commandes})
 
 
+# ── Staff: order management ───────────────────────────────────────────────────
+
 @login_required
 @role_required('ADMIN', 'VENDEUR')
 def gestion_commandes(request):
-    commandes = Commande.objects.select_related('client').prefetch_related('items__produit').order_by('-created_at')
+    """Admin/vendor view: list all orders with client and item details."""
+    commandes = (
+        Commande.objects
+        .select_related('client')
+        .prefetch_related('items__produit')
+        .order_by('-created_at')
+    )
     return render(request, 'magazin/gestion_commandes.html', {
         'commandes': commandes,
         'status_choices': Commande.STATUS_CHOICES,
@@ -222,6 +260,7 @@ def gestion_commandes(request):
 @login_required
 @role_required('ADMIN', 'VENDEUR')
 def modifier_statut_commande(request, commande_id):
+    """Update an order's status (e.g. pending → shipped). POST only."""
     commande = get_object_or_404(Commande, id=commande_id)
     if request.method != 'POST':
         return redirect('gestion_commandes')
@@ -233,14 +272,17 @@ def modifier_statut_commande(request, commande_id):
         return redirect('gestion_commandes')
 
     commande.statut = nouveau_statut
-    commande.save(update_fields=['statut'])
+    commande.save(update_fields=['statut'])  # Only write the changed field
     messages.success(request, f'Statut de la commande #{commande.id} mis à jour.')
     return redirect('gestion_commandes')
 
-# ── Vendeur: add product ──
+
+# ── Staff: product management ─────────────────────────────────────────────────
+
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def ajouter_produit(request):
+    """Add a new product. A stock record (quantity 0) is created automatically."""
     from .forms import ProduitForm
     form = ProduitForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
@@ -248,16 +290,13 @@ def ajouter_produit(request):
         Stock.objects.get_or_create(produit=produit, defaults={'quantite': 0})
         messages.success(request, 'Produit ajouté avec succès.')
         return redirect('produits')
-    return render(request, 'magazin/produit_form.html', {
-        'form': form,
-        'titre': 'Ajouter un produit',
-    })
+    return render(request, 'magazin/produit_form.html', {'form': form, 'titre': 'Ajouter un produit'})
 
 
-# ── Vendeur: edit product ──
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def modifier_produit(request, produit_id):
+    """Edit an existing product."""
     from .forms import ProduitForm
     produit = get_object_or_404(Produit, id=produit_id)
     form = ProduitForm(request.POST or None, request.FILES or None, instance=produit)
@@ -272,10 +311,10 @@ def modifier_produit(request, produit_id):
     })
 
 
-# ── Vendeur: delete product ──
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def supprimer_produit(request, produit_id):
+    """Delete a product after a POST confirmation step."""
     produit = get_object_or_404(Produit, id=produit_id)
     if request.method == 'POST':
         produit.delete()
@@ -284,10 +323,15 @@ def supprimer_produit(request, produit_id):
     return render(request, 'magazin/produit_confirm_delete.html', {'produit': produit})
 
 
-# ── Vendeur: manage stock ──
+# ── Staff: stock management ───────────────────────────────────────────────────
+
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def gerer_stock(request):
+    """
+    Overview of all product stock levels.
+    Also computes the total stock value (sum of qty × price across all products).
+    """
     from .forms import StockForm
     produits = Produit.objects.select_related('stock').all()
     total_stock_value = (
@@ -299,7 +343,7 @@ def gerer_stock(request):
                 )
             )
         )['total']
-        or 0
+        or 0  # Fall back to 0 if there are no stock records
     )
     return render(request, 'magazin/stock.html', {
         'produits': produits,
@@ -310,6 +354,7 @@ def gerer_stock(request):
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def modifier_stock(request, produit_id):
+    """Update the stock quantity for a single product."""
     from .forms import StockForm
     produit = get_object_or_404(Produit, id=produit_id)
     stock, _ = Stock.objects.get_or_create(produit=produit)
@@ -318,11 +363,10 @@ def modifier_stock(request, produit_id):
         form.save()
         messages.success(request, f'Stock de "{produit.nom}" mis à jour.')
         return redirect('stock')
-    return render(request, 'magazin/stock_form.html', {
-        'form': form,
-        'produit': produit,
-    })
+    return render(request, 'magazin/stock_form.html', {'form': form, 'produit': produit})
 
+
+# ── Staff: supplier management ────────────────────────────────────────────────
 
 @login_required
 @role_required('VENDEUR', 'ADMIN')
@@ -333,10 +377,8 @@ def ajouter_fournisseur(request):
         form.save()
         messages.success(request, 'Fournisseur ajouté avec succès.')
         return redirect('fournisseurs')
-    return render(request, 'magazin/fournisseur_form.html', {
-        'form': form,
-        'titre': 'Ajouter un fournisseur',
-    })
+    return render(request, 'magazin/fournisseur_form.html', {'form': form, 'titre': 'Ajouter un fournisseur'})
+
 
 @login_required
 @role_required('VENDEUR', 'ADMIN')
@@ -354,6 +396,7 @@ def modifier_fournisseur(request, fournisseur_id):
         'fournisseur': fournisseur,
     })
 
+
 @login_required
 @role_required('VENDEUR', 'ADMIN')
 def supprimer_fournisseur(request, fournisseur_id):
@@ -363,6 +406,7 @@ def supprimer_fournisseur(request, fournisseur_id):
         messages.success(request, 'Fournisseur supprimé.')
         return redirect('fournisseurs')
     return render(request, 'magazin/fournisseur_confirm_delete.html', {'fournisseur': fournisseur})
+
 
 @login_required
 @role_required('VENDEUR', 'ADMIN')
