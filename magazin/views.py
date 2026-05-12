@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
-from .models import Produit, Categorie, Panier, PanierItem, Profile, Stock, Commande, CommandeItem, Fournisseur
+from .models import Produit, Categorie, Panier, PanierItem, Profile, Stock, Commande, CommandeItem, Fournisseur, Reclamation
 from .decorators import role_required
 
 
@@ -413,3 +413,39 @@ def supprimer_fournisseur(request, fournisseur_id):
 def liste_fournisseurs(request):
     fournisseurs = Fournisseur.objects.all()
     return render(request, 'magazin/fournisseurs.html', {'fournisseurs': fournisseurs})
+
+
+def liste_reclamation(request):
+    reclamations = Reclamation.objects.all()
+    return render(request,'magazin/reclamations.html',{'reclamations':reclamations})
+
+def supprimer_reclamation(request, reclamation_id):
+    reclamation = get_object_or_404(Reclamation,id=reclamation_id)
+    if request.method == 'POST':
+        reclamation.delete()
+        messages.success(request, 'Reclamation supprimé.')
+        return redirect('reclamation')
+    return render(request, 'magazin/reclamation_confirm_delete.html', {'reclamation': reclamation})
+
+def ajouter_reclamation(request):
+    from .forms import ReclamationForm
+    form = ReclamationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Reclamation ajouté avec succès.')
+        return redirect('reclamation')
+    return render(request, 'magazin/reclamation_form.html', {'form': form, 'titre': 'Ajouter une reclamation'})
+
+def modifier_reclamation(request, reclamation_id):
+    from .forms import ReclamationForm
+    reclamation = get_object_or_404(Reclamation, id=reclamation_id)
+    form = ReclamationForm(request.POST or None, instance=reclamation)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Rclamation modifié.')
+        return redirect('reclamation')
+    return render(request, 'magazin/reclamation_form.html', {
+        'form': form,
+        'titre': 'Modifier la reclamation',
+        'reclamation': reclamation,
+    })

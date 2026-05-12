@@ -118,3 +118,9 @@ class CommandeItem(models.Model):
 
     def __str__(self):
         return f"{self.quantite}x {self.produit.nom}"
+    
+class Reclamation(models.Model):
+    description = models.TextField()
+
+    def __str__(self):
+        return self.description

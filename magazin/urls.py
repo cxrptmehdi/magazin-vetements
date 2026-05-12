@@ -31,4 +31,10 @@ urlpatterns = [
     path('fournisseurs/ajouter/', views.ajouter_fournisseur, name='ajouter_fournisseur'),
     path('fournisseurs/modifier/<int:fournisseur_id>/', views.modifier_fournisseur, name='modifier_fournisseur'),
     path('fournisseurs/supprimer/<int:fournisseur_id>/', views.supprimer_fournisseur, name='supprimer_fournisseur'),
+
+    path('reclamations/',views.liste_reclamation, name='reclamation'),
+    path('reclamations/ajouter/',views.ajouter_reclamation, name='ajouter_reclmation'),
+    path('reclamations/modifier/<int:reclamation_id>', views.modifier_reclamation, name='modifier_reclamation'),
+    path('reclamations/supprimer/<int:reclamation_id>/', views.supprimer_reclamation, name='supprimer_reclamation'),
+
 ]

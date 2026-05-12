@@ -1,0 +1,30 @@
+{% extends 'magazin/base.html' %}
+{% block title %}{{ titre }} — Magazin{% endblock %}
+
+{% block content %}
+
+<div class="page-hero">
+  <p class="eyebrow">Gestion</p>
+  <h1><span class="text-gradient">{{ titre }}</span></h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card p-4">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:500">Description</label>
+          {{ form.description }}
+        </div>
+        <button type="submit" class="btn btn-brand w-100">
+          <i class="bi bi-check-circle me-2"></i>Enregistrer
+        </button>
+        
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

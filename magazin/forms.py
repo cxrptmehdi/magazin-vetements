@@ -1,5 +1,5 @@
 from django import forms
-from .models import Produit, Stock, Fournisseur
+from .models import Produit, Stock, Fournisseur, Reclamation
 
 
 class ProduitForm(forms.ModelForm):
@@ -35,4 +35,12 @@ class FournisseurForm(forms.ModelForm):
             'nom_societe': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom du fournisseur'}),
             'contact':     forms.TextInput(attrs={'class': 'form-control'}),
             'adresse':     forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class ReclamationForm(forms.ModelForm):
+    class Meta:
+        model = Reclamation
+        fields = ['description']
+        widget = {
+            'description' : forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Reclamation'})
         }
